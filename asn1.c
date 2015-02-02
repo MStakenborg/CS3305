@@ -17,7 +17,6 @@ int make_tokenlist(char *buf, char *tokens[])
   char input_line[MAX]; 
   char *line; 
   int i, n; 
-   
   i = 0; 
 
   line = buf; 
@@ -38,29 +37,51 @@ void main(void)
 {
     char input_line[MAX], *tokens[CMD_MAX]; 
     char final[CMD_MAX]; 
-    int i,n;
-
+    int i,n,count=0;
+    pid_t pid; 
+while(1){
     printf("mstakenb> "); 
     fgets(input_line, MAX, stdin); 
 
+    /*check for exit command or blank input*/ 
     if(!strcmp(input_line, "exit\n"))
     {
        exit(0); 
-     }
+    }
 
-    else{
-      if(input_line != NULL)
+    if(!strcmp(input_line, "\n"))
     {
-       n = make_tokenlist(input_line, tokens); 
+      printf("Invalid input. Exiting program...\n"); 
+      exit(0); 
+    }
+    if(input_line != NULL)
+    {
+    
+      //fork
+      pid = fork();
+    
+      if(pid <  0)
+      {
+         perror("error forking");
+      }
+    
+      if(pid  > 0)
+      {
+        wait(0);
+      }
+
+      if(pid == 0)
+      {
+         /*parse command given*/
+         n = make_tokenlist(input_line, tokens); 
+        for(i = 0; i < n; i++)
+        printf("extracted token is %s\n", tokens[i]);
+        execvp(tokens[0], tokens); 
+      }
     }
     else
     {
-       printf("Invalid input. Exiting program... /n"); 
+       printf("Invalid input. Exiting program...\n"); 
     }
-
-    /*tester line REMOVE OR MODIFY*/ 
-    for(i = 0; i < n; i++)
-       printf("extracted token is %s\n", tokens[i]); 
-    }
-
+}
 }
