@@ -14,10 +14,15 @@ int getValue(char *num)
 {
   int value;
   value = atoi(num);
+  if(value == 0)
+  {
+    printf("Please input a digit for history\n");
+    return -1;
+  }
   return value;
 }
 
-void printHistory(char *max)
+int printHistory(char *max)
 {
   int value;
   if(histCount == 0)
@@ -38,17 +43,28 @@ void printHistory(char *max)
     else
     {
       value = getValue(max); 
-      if(value > 10)
+     
+      if(value == -1)
       {
-        value = 10; 
-        printf("Printing the max 10 commands");
+        return (0);
       }
-      for(h = 0; h <= value; h++)
+      if(value < histCount)
       {
-        printf("%s\n", history[h]); 
+        for(h = 0; h < value; h++)
+        {
+           printf("%s\n", history[h]); 
+        }
       }
-     }
+      else
+      {
+        for(h = 0; h < histCount; h++)
+        {
+          printf("%s\n", history[h]);
+        }
+      }
+    }
   }
+  return 0; 
 }
 
 void addHistory(const char *command)
@@ -115,16 +131,30 @@ void main(void)
           exit(0);
       }
     
-      if(!strcmp(input_line, "history"))
+      if(!strncmp(tokens[0], "history", 6))
       {
+        int result;
+      //  pid2 = fork();
+      //  if(pid2 > 0)
+      //  {
+      //    wait(NULL);
+      //  }
+      //  if(pid == 0)
+      //  {
         if(n == 1)
         {
-          printHistory(NULL); //print 10 commands by default
+          result = printHistory(NULL); //print 10 commands by default
         }
         if(n > 1)
         {
-          printHistory(tokens[1]);
+          result = printHistory(tokens[1]);
         }
+          if(result == -1)
+          {
+            printf("error printing history\n");
+            exit(0);
+          }
+       // }
       }
 
     else{
