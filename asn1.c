@@ -38,12 +38,47 @@ void main(void)
     char input_line[MAX], *tokens[CMD_MAX], *history[CMD_MAX]; 
     char final[CMD_MAX]; 
     int i,n,status, count=0;
-    pid_t pid; 
+    pid_t pid, pid2; 
 
     history[0] = NULL; 
 
-    pid = fork();
+    while(1)
+    {
+      printf("mstakenb> ");
+      fgets(input_line, MAX, stdin);
+      if(!strcmp(input_line, "\n"))
+      {
+         printf("Invalid input. Try again...\n");
+      }
+      
+      input_line[strlen(input_line) -1] = '\0';
+       
+      /*check for exit command or blank input*/
+      if(!strcmp(input_line, "exit"))
+      {
+          exit(0);
+      }
+    
+      if(!strcmp(input_line, "history"))
+      {
+         if(history[0] == NULL)
+         {
+            printf("No previous commands to report\n");
+         }
+         else
+         {
+            int j;
+            for(j = 0; j <= count; j++)
+            {
+                printf("%s\n", history[j]);
+            }
+         }
+       }
 
+
+    pid = fork();
+        
+    
     if(pid <  0)
     {
        perror("error forking");
@@ -57,38 +92,6 @@ void main(void)
 
     if(pid == 0)
     {
-      while(1)
-      {
-        printf("mstakenb> "); 
-        fgets(input_line, MAX, stdin); 
-        input_line[strlen(input_line) -1] = '\0';
-
-        /*check for exit command or blank input*/ 
-        if(!strcmp(input_line, "exit\n"))
-        {
-           exit(0); 
-        }
-
-        if(!strcmp(input_line, "\n"))
-        {
-           printf("Invalid input. Try again...\n"); 
-        }
-    
-        if(!strcmp(input_line, "history\n"))
-        {
-           if(history[0] == NULL)
-           {
-              printf("No previous commands to report\n");
-           }
-           else
-           {
-             int j; 
-             for(j = 0; j <= count; j++)
-             {
-               printf("%s\n", history[j]); 
-             }
-           }
-         }
 
         if(input_line != NULL)
         {
@@ -99,9 +102,19 @@ void main(void)
           history[count] = input_line; 
           count++; 
           
-          /*command with arguments*/
-          execvp(tokens[0], tokens);
+          pid2 = fork();
+         
+          if(pid2 > 0)
+          {
+            wait(2); 
+          }
+          if(pid == 0)
+          {
+            /*command with arguments*/
+          status = execvp(tokens[0], tokens);
+          }
        }
      }
    }
 }
+
