@@ -35,53 +35,72 @@ int make_tokenlist(char *buf, char *tokens[])
 
 void main(void)
 {
-    char input_line[MAX], *tokens[CMD_MAX]; 
+    char input_line[MAX], *tokens[CMD_MAX], *history[CMD_MAX]; 
     char final[CMD_MAX]; 
-    int i,n,count=0;
+    int i,n,status, count=0;
     pid_t pid; 
-while(1){
-    printf("mstakenb> "); 
-    fgets(input_line, MAX, stdin); 
 
-    /*check for exit command or blank input*/ 
-    if(!strcmp(input_line, "exit\n"))
+    history[0] = NULL; 
+
+    pid = fork();
+
+    if(pid <  0)
     {
-       exit(0); 
+       perror("error forking");
+       exit(pid); 
     }
 
-    if(!strcmp(input_line, "\n"))
+    if(pid  > 0)
     {
-      printf("Invalid input. Exiting program...\n"); 
-      exit(0); 
+       wait(NULL);
     }
-    if(input_line != NULL)
-    {
-    
-      //fork
-      pid = fork();
-    
-      if(pid <  0)
-      {
-         perror("error forking");
-      }
-    
-      if(pid  > 0)
-      {
-        wait(0);
-      }
 
-      if(pid == 0)
-      {
-         /*parse command given*/
-         n = make_tokenlist(input_line, tokens); 
-        for(i = 0; i < n; i++)
-        printf("extracted token is %s\n", tokens[i]);
-        execvp(tokens[0], tokens); 
-      }
-    }
-    else
+    if(pid == 0)
     {
-       printf("Invalid input. Exiting program...\n"); 
-    }
-}
+      while(1)
+      {
+        printf("mstakenb> "); 
+        fgets(input_line, MAX, stdin); 
+
+        /*check for exit command or blank input*/ 
+        if(!strcmp(input_line, "exit\n"))
+        {
+           exit(0); 
+        }
+
+        if(!strcmp(input_line, "\n"))
+        {
+           printf("Invalid input. Try again...\n"); 
+        }
+    
+        if(!strcmp(input_line, "history\n"))
+        {
+           if(history[0] == NULL)
+           {
+              printf("No previous commands to report\n");
+           }
+           else
+           {
+             int j; 
+             for(j = 0; j <= count; j++)
+             {
+               printf("%s\n", history[j]); 
+             }
+           }
+         }
+
+        if(input_line != NULL)
+        {
+          /*parse command given*/
+          n = make_tokenlist(input_line, tokens); 
+
+          /*add commands to history*/
+          history[count] = input_line; 
+          count++; 
+          
+          /*command with arguments*/
+          execvp(tokens[0], tokens);
+       }
+     }
+   }
 }
