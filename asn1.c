@@ -37,15 +37,19 @@ void main(void)
 {
     char input_line[MAX], *tokens[CMD_MAX], *history[CMD_MAX]; 
     char final[CMD_MAX]; 
-    int i,n,status, count=0;
+    int i,n,status = 2, count=0;
     pid_t pid, pid2; 
 
     history[0] = NULL; 
+
 
     while(1)
     {
       printf("mstakenb> ");
       fgets(input_line, MAX, stdin);
+      history[count] = input_line; 
+      count++;
+
       if(!strcmp(input_line, "\n"))
       {
          printf("Invalid input. Try again...\n");
@@ -98,21 +102,12 @@ void main(void)
           /*parse command given*/
           n = make_tokenlist(input_line, tokens); 
 
-          /*add commands to history*/
-          history[count] = input_line; 
-          count++; 
-          
-          pid2 = fork();
-         
-          if(pid2 > 0)
-          {
-            wait(2); 
-          }
-          if(pid == 0)
-          {
             /*command with arguments*/
-          status = execvp(tokens[0], tokens);
-          }
+            status = execvp(tokens[0], tokens);
+            if(status == 1)
+            {
+              printf("Error executing command, try again..."); 
+            }
        }
      }
    }
