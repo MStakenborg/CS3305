@@ -6,6 +6,34 @@
 #define MAX 256
 #define CMD_MAX 10
 
+/*global variables*/
+static const char *history[CMD_MAX];
+static unsigned histCount = -1; 
+
+void printHistory()
+{
+  if(histCount == -1)
+  {
+    /*no history to print yet*/
+    printf("No commands have been entered."); 
+  }
+  else
+  {
+    int h; 
+    for(h = 0; h < histCount; h++)
+    {
+      printf("%s\n", history[h]); 
+    }
+  }
+}
+
+void addHistory(const char *command)
+{
+   history[histCount] = command; 
+   histCount++;
+}
+
+
 /*make tokenlist takes the following parameters..
  * buf input representing string for which the tokens are determined 
  * tokens: represents the array the tokens are put into
@@ -40,15 +68,12 @@ void main(void)
     int i,n,status = 2, count=0;
     pid_t pid, pid2; 
 
-    history[0] = NULL; 
-
 
     while(1)
     {
       printf("mstakenb> ");
       fgets(input_line, MAX, stdin);
-      history[count] = input_line; 
-      count++;
+      addHistory(input_line);  
 
       if(!strcmp(input_line, "\n"))
       {
@@ -65,21 +90,10 @@ void main(void)
     
       if(!strcmp(input_line, "history"))
       {
-         if(history[0] == NULL)
-         {
-            printf("No previous commands to report\n");
-         }
-         else
-         {
-            int j;
-            for(j = 0; j <= count; j++)
-            {
-                printf("%s\n", history[j]);
-            }
-         }
-       }
+          printHistory(); 
+      }
 
-
+    else{
     pid = fork();
         
     
@@ -96,18 +110,18 @@ void main(void)
 
     if(pid == 0)
     {
-
         if(input_line != NULL)
         {
           /*parse command given*/
           n = make_tokenlist(input_line, tokens); 
 
-            /*command with arguments*/
+            /*execute given command(s) with/without args*/
             status = execvp(tokens[0], tokens);
             if(status == 1)
             {
               printf("Error executing command, try again..."); 
             }
+        }
        }
      }
    }
