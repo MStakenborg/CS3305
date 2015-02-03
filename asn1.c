@@ -22,9 +22,9 @@ int make_tokenlist(char *buf, char *tokens[])
   line = buf; 
   tokens[i] = strtok(line, " ");
   do  {
-      i++; 
+      i++;
       line = NULL; 
-      tokens[i] = strtok(line, " "); 
+      tokens[i] = strtok(line, " ");
   } while (tokens[i] != NULL); 
 
   return i; 
@@ -61,6 +61,7 @@ void main(void)
       {
         printf("mstakenb> "); 
         fgets(input_line, MAX, stdin); 
+        input_line[strlen(input_line) -1] = '\0';
 
         /*check for exit command or blank input*/ 
         if(!strcmp(input_line, "exit\n"))
