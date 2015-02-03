@@ -8,22 +8,46 @@
 
 /*global variables*/
 static const char *history[CMD_MAX];
-static unsigned histCount = -1; 
+static unsigned histCount = 0; 
 
-void printHistory()
+int getValue(char *num)
 {
-  if(histCount == -1)
+  int value;
+  value = atoi(num);
+  return value;
+}
+
+void printHistory(char *max)
+{
+  int value;
+  if(histCount == 0)
   {
     /*no history to print yet*/
     printf("No commands have been entered."); 
   }
   else
   {
-    int h; 
-    for(h = 0; h < histCount; h++)
+    int h;
+    if(max == NULL)
     {
-      printf("%s\n", history[h]); 
+       for(h = 0; h < histCount; h++)
+       {
+          printf("%s\n", history[h]); 
+       }
     }
+    else
+    {
+      value = getValue(max); 
+      if(value > 10)
+      {
+        value = 10; 
+        printf("Printing the max 10 commands");
+      }
+      for(h = 0; h <= value; h++)
+      {
+        printf("%s\n", history[h]); 
+      }
+     }
   }
 }
 
@@ -73,7 +97,10 @@ void main(void)
     {
       printf("mstakenb> ");
       fgets(input_line, MAX, stdin);
-      addHistory(input_line);  
+      addHistory(input_line);
+
+       /*parse command given*/
+       n = make_tokenlist(input_line, tokens);
 
       if(!strcmp(input_line, "\n"))
       {
@@ -90,7 +117,14 @@ void main(void)
     
       if(!strcmp(input_line, "history"))
       {
-          printHistory(); 
+        if(n == 1)
+        {
+          printHistory(NULL); //print 10 commands by default
+        }
+        if(n > 1)
+        {
+          printHistory(tokens[1]);
+        }
       }
 
     else{
@@ -112,14 +146,12 @@ void main(void)
     {
         if(input_line != NULL)
         {
-          /*parse command given*/
-          n = make_tokenlist(input_line, tokens); 
-
             /*execute given command(s) with/without args*/
             status = execvp(tokens[0], tokens);
-            if(status == 1)
+            if(status == -1)
             {
-              printf("Error executing command, try again..."); 
+              printf("Error executing command, try again...\n");
+              exit(0);
             }
         }
        }
