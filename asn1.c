@@ -105,8 +105,9 @@ void main(void)
 {
     char input_line[MAX], *tokens[CMD_MAX], *history[CMD_MAX]; 
     char final[CMD_MAX]; 
-    int i,n,a, status = 2, count=0;
+    int i,n,a, status = 2, count=0, pipe = 0;
     pid_t pid, pid2; 
+    input_line[strlen(input_line) -1] = '\0';
 
 
     while(1)
@@ -119,15 +120,20 @@ void main(void)
        /*parse command given*/
        n = make_tokenlist(input_line, tokens);
 
+       /*check if command is a pipe command*/
+       for(a = 0; a < n; a++){
+           if(!strcmp(tokens[a], "|")){
+               pipe = 1;  //pipe command entered
+           }
+       }
+
+      /*check for blank input*/
       if(!strcmp(input_line, "\n"))
       {
          printf("Invalid input. Try again...\n");
       }
       
-       for (a = 0; a < n; a++){
-            printf("Token extracted: %s \n", tokens[a]);
-             }
-      /*check for exit command or blank input*/
+      /*check for exit command*/
       if(!strcmp(input_line, "exit"))
       {
           exit(0);
@@ -136,13 +142,6 @@ void main(void)
       if(!strncmp(tokens[0], "history", 6))
       {
         int result;
-      //  pid2 = fork();
-      //  if(pid2 > 0)
-      //  {
-      //    wait(NULL);
-      //  }
-      //  if(pid == 0)
-      //  {
         if(n == 1)
         {
           result = printHistory(NULL); //print 10 commands by default
@@ -156,7 +155,6 @@ void main(void)
             printf("error printing history\n");
             exit(0);
           }
-       // }
       }
 
     else{
@@ -174,8 +172,13 @@ void main(void)
        wait(NULL);
     }
 
+    /*child process*/
     if(pid == 0)
     {
+
+      /*if single commands with arguments - no pipe*/
+      if(pipe == 0)
+      {
         if(input_line != NULL)
         {
             /*execute given command(s) with/without args*/
@@ -185,7 +188,13 @@ void main(void)
               printf("Error executing command, try again...\n");
               exit(0);
             }
+         }
         }
+      /*pipe command selected*/ 
+      else{
+
+          exit(0);
+      }
        }
      }
    }
