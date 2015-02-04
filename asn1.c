@@ -105,7 +105,7 @@ void main(void)
 {
     char input_line[MAX], *tokens[CMD_MAX], *history[CMD_MAX]; 
     char final[CMD_MAX]; 
-    int i,n,status = 2, count=0;
+    int i,n,a, status = 2, count=0;
     pid_t pid, pid2; 
 
 
@@ -115,6 +115,7 @@ void main(void)
       fgets(input_line, MAX, stdin);
       addHistory(input_line);
 
+       input_line[strlen(input_line) -1] = '\0';
        /*parse command given*/
        n = make_tokenlist(input_line, tokens);
 
@@ -123,8 +124,9 @@ void main(void)
          printf("Invalid input. Try again...\n");
       }
       
-      input_line[strlen(input_line) -1] = '\0';
-       
+       for (a = 0; a < n; a++){
+            printf("Token extracted: %s \n", tokens[a]);
+             }
       /*check for exit command or blank input*/
       if(!strcmp(input_line, "exit"))
       {
