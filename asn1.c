@@ -113,6 +113,7 @@ void main(void)
 
     while(1)
     {
+      flag = 0, piped = 0;
       printf("mstakenb> ");
       fgets(input_line, MAX, stdin);
       addHistory(input_line);
