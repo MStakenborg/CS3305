@@ -108,7 +108,7 @@ void main(void)
     char input_line[MAX], *tokens[CMD_MAX], *history[CMD_MAX]; 
     char *execA[CMD_MAX], *execB[CMD_MAX];
     char final[CMD_MAX]; 
-    int i,n,a, status = 2, count=0, piped = 0;
+    int i,n,a, status = 2, count=0, piped = 0, redirin = 0, redirout = 0;
     pid_t pid, pid2;                             
 
     while(1)
@@ -121,10 +121,16 @@ void main(void)
        /*parse command given*/
        n = make_tokenlist(input_line, tokens);
 
-       /*check if command is a pipe command*/
+       /*check if command is a pipe command or redirect*/
        for(a = 0; a < n; a++){
            if(!strcmp(tokens[a], "|")){
                piped = 1;  //pipe command entered
+           }
+           if(!strcmp(tokens[a], "<")){
+             redirin = 1;  //redireted in command
+           }
+           if(!strcmp(tokens[a], ">")){
+             redirout = 1; //redirected out command
            }
        }
       
