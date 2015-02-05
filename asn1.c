@@ -214,6 +214,7 @@ void main(void)
         while(strcmp(tokens[b], "|")){
            execA[b] = tokens[b];
            b++;
+           printf("Exec A contains: %s \n", tokens[b]);
         }
         b++; //account for pipe character
         execA[b] = NULL;
@@ -222,6 +223,7 @@ void main(void)
            execB[b] = tokens[b];
            b++;
         } 
+        execB[b] = NULL; 
 
         pid2 = fork();
                
@@ -241,7 +243,9 @@ void main(void)
             exit(0); 
           }
 
-          retValue = execlp("ps", "ps", NULL);
+          execA[0] = "ps"; 
+          execA[1] = NULL; 
+          retValue = execvp(execA[0], execA);
           
           if(retValue < 0)
           {
@@ -260,7 +264,10 @@ void main(void)
             exit(0);
           }
 
-          retValue = execlp("sort", "sort", NULL);
+          execB[0] = "sort"; 
+          execB[1] = NULL; 
+
+          retValue = execvp(execB[0], execB);
 
           if(retValue < 0)
           {
