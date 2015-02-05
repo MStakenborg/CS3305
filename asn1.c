@@ -108,7 +108,7 @@ void main(void)
     char input_line[MAX], *tokens[CMD_MAX], *history[CMD_MAX]; 
     char *execA[CMD_MAX], *execB[CMD_MAX];
     char final[CMD_MAX]; 
-    int i,n,a, status = 2, count=0, piped = 0, redirin = 0, redirout = 0;
+    int i,n,a, flag = 0, status = 2, count=0, piped = 0, redirin = 0, redirout = 0;
     pid_t pid, pid2;                             
 
     while(1)
@@ -117,7 +117,6 @@ void main(void)
       fgets(input_line, MAX, stdin);
       addHistory(input_line);
 
-       input_line[strlen(input_line) -1] = '\0';
        /*parse command given*/
        n = make_tokenlist(input_line, tokens);
 
@@ -133,14 +132,17 @@ void main(void)
              redirout = 1; //redirected out command
            }
        }
-      
+     
        
        /*check for blank input*/
       if(!strcmp(input_line, "\n"))
       {
          printf("Invalid input. Try again...\n");
+         flag = 1;
       }
-      
+     
+       input_line[strlen(input_line) -1] = '\0';
+              
       /*check for exit command*/
       if(!strcmp(input_line, "exit"))
       {
@@ -149,6 +151,7 @@ void main(void)
     
       if(!strncmp(tokens[0], "history", 6))
       {
+        flag = 1;
         int result;
         if(n == 1)
         {
@@ -165,47 +168,45 @@ void main(void)
           }
        }      
 
-    else{
+    if(flag != 1){
       int fd[2];
 
       pid = fork();
 
     
-    if(pid <  0)
-    {
-       perror("error forking");
-       exit(pid); 
-    }
-
-    if(pid  > 0)
-    {
-       wait(NULL);
-    }
-
-    /*child process*/
-    if(pid == 0)
-    {
-
-      /*if single commands with arguments - no pipe*/
-      if(piped == 0)
+      if(pid <  0)
       {
-        if(input_line != NULL)
+         perror("error forking");
+         exit(pid); 
+      }
+
+      if(pid  > 0)
+      {
+         wait(NULL);
+      }
+
+      /*child process*/
+      if(pid == 0)
+      {
+
+        /*if single commands with arguments - no pipe*/
+        if(piped == 0)
         {
-            /*execute given command(s) with/without args*/
-            status = execvp(tokens[0], tokens);
-            if(status == -1)
-            {
-              printf("Error executing command, try again...\n");
-              exit(0);
-            }
-         }
+          if(input_line != NULL)
+          {
+             /*execute given command(s) with/without args*/
+             status = execvp(tokens[0], tokens);
+             if(status == -1)
+             {
+               printf("Error executing command, try again...\n");
+               exit(0);
+             }
+          }
         }
       /*pipe command selected*/ 
       else{
         pipe(fd);
         int retValue = 2; 
-        pid2 = fork();
-
 
         /*copy commands to 2 new arrays*/
         int b = 0;
@@ -214,13 +215,14 @@ void main(void)
            b++;
         }
         b++; //account for pipe character
-        execA[b] = "\0";
+        execA[b] = NULL;
     
         while(tokens[b] != NULL){
            execB[b] = tokens[b];
            b++;
         } 
 
+        pid2 = fork();
                
         if(pid2 < 0) 
         {
@@ -238,14 +240,13 @@ void main(void)
             exit(0); 
           }
 
-          retValue = execvp(execA[0], execA);
+          retValue = execlp("ps", "ps", NULL);
           
           if(retValue < 0)
           {
             perror("Error - exec in parent\n");
             exit(0);
           }
-          wait(NULL);
         }
 
         /*Child in pipe command*/
@@ -258,7 +259,7 @@ void main(void)
             exit(0);
           }
 
-          retValue = execvp(execB[0], execB);
+          retValue = execlp("sort", "sort", NULL);
 
           if(retValue < 0)
           {
