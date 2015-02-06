@@ -108,7 +108,7 @@ void main(void)
     char input_line[MAX], *tokens[CMD_MAX], *history[CMD_MAX]; 
     char *execA[CMD_MAX], *execB[CMD_MAX];
     char final[CMD_MAX]; 
-    int i,n,a, flag = 0, status = 2, count=0, piped = 0, redirin = 0, redirout = 0;
+    int i,n,a,c,flag = 0, status = 2, count=0, piped = 0, redirin = 0, redirout = 0;
     pid_t pid, pid2;                             
 
     while(1)
@@ -118,6 +118,12 @@ void main(void)
       fgets(input_line, MAX, stdin);
       addHistory(input_line);
 
+      /*prepare pipe matrices*/
+      for(c = 0; c < CMD_MAX; c++){
+        execA[c] = NULL; 
+        execB[c] = NULL; 
+      }
+
        /*check for blank input*/
       if(!strcmp(input_line, "\n"))
       {
@@ -125,38 +131,41 @@ void main(void)
          flag = 1;
       }
      
-      input_line[strlen(input_line) -1] = '\0';
+      else{
+        input_line[strlen(input_line) -1] = '\0';
               
-      /*check for exit command*/
-      if(!strcmp(input_line, "exit"))
-      {
-          exit(0);
-      }
-    
-      if(!strncmp(tokens[0], "history", 6))
-      {
-        flag = 1;
-        int result;
-        if(n == 1)
+        /*check for exit command*/
+        if(!strcmp(input_line, "exit"))
         {
-          result = printHistory(NULL); //print 10 commands by default
+           exit(0);
         }
-        if(n > 1)
+   
+
+        /*parse command given*/
+        n = make_tokenlist(input_line, tokens);
+        
+        
+        if(!strncmp(tokens[0], "history", 6))
         {
-          result = printHistory(tokens[1]);
-        }
+          flag = 1;
+          int result;
+          if(n == 1)
+          {
+             result = printHistory(NULL); //print 10 commands by default
+          }
+          if(n > 1)
+          {
+             result = printHistory(tokens[1]);
+          }
           if(result == -1)
           {
-            printf("error printing history\n");
-            exit(0);
+             printf("error printing history\n");
+             exit(0);
           }
-       }      
+        }      
 
-       /*parse command given*/
-       n = make_tokenlist(input_line, tokens);
-
-       /*check if command is a pipe command or redirect*/
-       for(a = 0; a < n; a++){
+        /*check if command is a pipe command or redirect*/
+        for(a = 0; a < n; a++){
            if(!strcmp(tokens[a], "|")){
                  piped = 1;  //pipe command entered
             }
@@ -166,110 +175,112 @@ void main(void)
             if(!strcmp(tokens[a], ">")){
                   redirout = 1; //redirected out command
             }
-        }
+         }
 
+        /*if exit, blank input or history was not entered execute cmd*/
+        if(flag != 1){
+        int fd[2];
 
-
-    if(flag != 1){
-      int fd[2];
-
-      pid = fork();
-
+        pid = fork();
     
-      if(pid <  0)
-      {
-         perror("error forking");
-         exit(pid); 
-      }
-
-      if(pid  > 0)
-      {
-         wait(NULL);
-      }
-
-      /*child process*/
-      if(pid == 0)
-      {
-
-        /*if single commands with arguments - no pipe*/
-        if(piped == 0)
+        if(pid <  0)
         {
-          if(input_line != NULL)
+           perror("error forking");
+           exit(pid); 
+        }
+
+        if(pid  > 0)
+        {
+           wait(NULL);
+        }
+
+        /*child process*/
+        if(pid == 0)
+        {
+          /*if single commands with arguments - no pipe*/
+          if(piped == 0)
           {
-             /*execute given command(s) with/without args*/
-             status = execvp(tokens[0], tokens);
-             if(status == -1)
-             {
-               printf("Error executing command, try again...\n");
-               exit(0);
-             }
+            if(input_line != NULL)
+            {
+               /*execute given command(s) with/without args*/
+               status = execvp(tokens[0], tokens);
+               if(status == -1)
+               {
+                 printf("Error executing command, try again...\n");
+                 exit(0);
+               }
+            }
           }
-        }
-      /*pipe command selected*/ 
-      else{
-        pipe(fd);
-        int retValue = 2; 
+         /*pipe command selected*/ 
+         else
+         {
+            pipe(fd);
+            int retValue = 2; 
 
-        /*copy commands to 2 new arrays*/
-        int b = 0;
-        while(strcmp(tokens[b], "|")){
-           execA[b] = tokens[b];
-           b++;
-        }
-        b++; //account for pipe character
-        execA[b] = NULL;
+            /*copy commands to 2 new arrays*/
+            int b = 0, d=0;
+            while(strcmp(tokens[b], "|"))
+            {
+               execA[b] = tokens[b];
+               b++;
+            }
+            b++; //account for pipe character
     
-        while(tokens[b] != NULL){
-           execB[b] = tokens[b];
-           b++;
-        } 
+            while(tokens[b] != NULL)
+            {
+               execB[d] = tokens[b];
+               b++; d++;
+            } 
 
-        pid2 = fork();
+            pid2 = fork();
                
-        if(pid2 < 0) 
-        {
-            perror("Error forking \n");
-            exit(-1);
-        }
+            if(pid2 < 0) 
+            {
+               perror("Error forking \n");
+               exit(-1);
+            }
 
-        /*Parent in pipe command*/
-        if(pid2 > 0)
-        {
-          close(fd[0]); 
-          if(dup2(fd[1], STDOUT_FILENO) < 0)
-          {
-            perror("Error dup in parent\n");
-            exit(0); 
-          }
+            /*Parent in pipe command*/
+            if(pid2 > 0)
+            {
+               close(fd[0]); 
+               if(dup2(fd[1], STDOUT_FILENO) < 0)
+               {
+                  perror("Error dup in parent\n");
+                  exit(0); 
+               }
 
-          retValue = execlp("ps", "ps", NULL);
+               retValue = execvp(execA[0], execA);
           
-          if(retValue < 0)
-          {
-            perror("Error - exec in parent\n");
-            exit(0);
+               if(retValue < 0)
+               {
+                  perror("Error - exec in parent\n");
+                  exit(0);
+               }
+               wait(NULL);
+            }
+
+            /*Child in pipe command*/
+            else
+            {
+              close(fd[1]);
+              if(dup2(fd[0], STDIN_FILENO) < 0)
+              {
+                 perror("Error dup in child\n"); 
+                 exit(0);
+              }
+
+              retValue = execvp(execB[0], execB);
+
+              if(retValue < 0)
+              {
+                 perror("Error executing in child\n"); 
+                 exit(0);
+              }
+              exit(0);
+            }
           }
         }
-
-        /*Child in pipe command*/
-        else
-        {
-          close(fd[1]);
-          if(dup2(fd[0], STDIN_FILENO) < 0)
-          {
-            perror("Error dup in child\n"); 
-            exit(0);
-          }
-
-          retValue = execlp("sort", "sort", NULL);
-
-          if(retValue < 0)
-          {
-            perror("Error executing in child\n"); 
-            exit(0);
-          }
-        }
-       }
       }
      }
    }
