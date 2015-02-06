@@ -237,7 +237,6 @@ void main(void)
               while(strcmp(tokens[b], "|"))
               {
                execA[b] = tokens[b];
-               printf("in execA: %s \n", execA[b]); 
                b++;
                }
               if(piped > 1 && piped < 3)
@@ -248,7 +247,6 @@ void main(void)
                 while(strcmp(tokens[b], "|"))
                 {
                   execC[c] = tokens[b];
-                  printf("in execC: %s \n", execC[c]);
                   b++;
                   c++;
                 }
@@ -275,7 +273,6 @@ void main(void)
             while(tokens[b] != NULL)
             {
                execB[d] = tokens[b];
-               printf("execB has: %s \n", execB[d]); 
                b++; d++;
             }
 
@@ -329,6 +326,11 @@ void main(void)
               else if(redirin == 0)
               {
                 retValue = execvp(execA[0], execA);
+              }
+
+              if(retValue < 0){
+                perror("Cannot execute\n");
+                exit(1);
               }
 
               /*two or more pipes detected - fork new child*/
@@ -388,16 +390,9 @@ void main(void)
                     perror("Error exec in second child\n"); 
                     exit(1); 
                   }
+                  exit(0); 
                 }
               }
-
-              if(retValue < 0)
-              {
-                 perror("Error executing in child\n"); 
-                 exit(0);
-              }
-              
-              exit(0);
             }
           }
         }
