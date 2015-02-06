@@ -118,23 +118,6 @@ void main(void)
       fgets(input_line, MAX, stdin);
       addHistory(input_line);
 
-       /*parse command given*/
-       n = make_tokenlist(input_line, tokens);
-
-       /*check if command is a pipe command or redirect*/
-       for(a = 0; a < n; a++){
-           if(!strcmp(tokens[a], "|")){
-               piped = 1;  //pipe command entered
-           }
-           if(!strcmp(tokens[a], "<")){
-             redirin = 1;  //redireted in command
-           }
-           if(!strcmp(tokens[a], ">")){
-             redirout = 1; //redirected out command
-           }
-       }
-     
-       
        /*check for blank input*/
       if(!strcmp(input_line, "\n"))
       {
@@ -142,7 +125,7 @@ void main(void)
          flag = 1;
       }
      
-       input_line[strlen(input_line) -1] = '\0';
+      input_line[strlen(input_line) -1] = '\0';
               
       /*check for exit command*/
       if(!strcmp(input_line, "exit"))
@@ -168,6 +151,24 @@ void main(void)
             exit(0);
           }
        }      
+
+       /*parse command given*/
+       n = make_tokenlist(input_line, tokens);
+
+       /*check if command is a pipe command or redirect*/
+       for(a = 0; a < n; a++){
+           if(!strcmp(tokens[a], "|")){
+                 piped = 1;  //pipe command entered
+            }
+            if(!strcmp(tokens[a], "<")){
+                  redirin = 1;  //redireted in command
+            }
+            if(!strcmp(tokens[a], ">")){
+                  redirout = 1; //redirected out command
+            }
+        }
+
+
 
     if(flag != 1){
       int fd[2];
@@ -214,7 +215,6 @@ void main(void)
         while(strcmp(tokens[b], "|")){
            execA[b] = tokens[b];
            b++;
-           printf("Exec A contains: %s \n", tokens[b]);
         }
         b++; //account for pipe character
         execA[b] = NULL;
@@ -223,7 +223,6 @@ void main(void)
            execB[b] = tokens[b];
            b++;
         } 
-        execB[b] = NULL; 
 
         pid2 = fork();
                
@@ -243,9 +242,7 @@ void main(void)
             exit(0); 
           }
 
-          execA[0] = "ps"; 
-          execA[1] = NULL; 
-          retValue = execvp(execA[0], execA);
+          retValue = execlp("ps", "ps", NULL);
           
           if(retValue < 0)
           {
@@ -264,10 +261,7 @@ void main(void)
             exit(0);
           }
 
-          execB[0] = "sort"; 
-          execB[1] = NULL; 
-
-          retValue = execvp(execB[0], execB);
+          retValue = execlp("sort", "sort", NULL);
 
           if(retValue < 0)
           {
