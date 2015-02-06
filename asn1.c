@@ -106,22 +106,24 @@ int make_tokenlist(char *buf, char *tokens[])
 void main(void)
 {
     char input_line[MAX], *tokens[CMD_MAX], *history[CMD_MAX]; 
-    char *execA[CMD_MAX], *execB[CMD_MAX];
+    char *execA[CMD_MAX], *execB[CMD_MAX], *execC[CMD_MAX], *execD[CMD_MAX];
     char final[CMD_MAX]; 
     int i,n,a,c,flag = 0, status = 2, count=0, piped = 0, redirin = 0, redirout = 0;
     pid_t pid, pid2;                             
 
     while(1)
     {
-      flag = 0, piped = 0;
+      flag = 0, piped = 0, redirin = 0, redirout = 0;
       printf("mstakenb> ");
       fgets(input_line, MAX, stdin);
       addHistory(input_line);
 
-      /*prepare pipe matrices*/
+      /*prepare pipe & redirect matrices*/
       for(c = 0; c < CMD_MAX; c++){
         execA[c] = NULL; 
-        execB[c] = NULL; 
+        execB[c] = NULL;
+        execC[c] = NULL;
+        execD[c] = NULL;
       }
 
        /*check for blank input*/
@@ -175,6 +177,7 @@ void main(void)
             if(!strcmp(tokens[a], ">")){
                   redirout = 1; //redirected out command
             }
+            
          }
 
         /*if exit, blank input or history was not entered execute cmd*/
@@ -197,8 +200,8 @@ void main(void)
         /*child process*/
         if(pid == 0)
         {
-          /*if single commands with arguments - no pipe*/
-          if(piped == 0)
+          /*if single commands with arguments - no pipe, no redirect*/
+          if(piped == 0 && redirin == 0 && redirout == 0)
           {
             if(input_line != NULL)
             {
@@ -219,18 +222,37 @@ void main(void)
 
             /*copy commands to 2 new arrays*/
             int b = 0, d=0;
-            while(strcmp(tokens[b], "|"))
+            if(piped != 0)
             {
+              while(strcmp(tokens[b], "|"))
+              {
                execA[b] = tokens[b];
                b++;
+               }
             }
-            b++; //account for pipe character
+            if(redirout != 0)
+            {
+               while(strcmp(tokens[b], ">"))
+               {
+                 execA[b] = tokens[b];
+                 b++;
+               }
+            }
+            else if(redirin != 0)
+            {
+              while(strcmp(tokens[b], "<"))
+              {
+                execA[b] = tokens[b];
+                b++;
+              }
+            }
+            b++; //account for pipe or redirect character
     
             while(tokens[b] != NULL)
             {
                execB[d] = tokens[b];
                b++; d++;
-            } 
+            }
 
             pid2 = fork();
                
@@ -250,17 +272,22 @@ void main(void)
                   exit(0); 
                }
 
-               retValue = execvp(execA[0], execA);
-          
+               if(redirout == 1 || piped == 1)
+               {
+                 retValue = execvp(execA[0], execA);
+               }
+               if(redirin == 1)
+               {
+                 retValue = execvp(execB[0], execB);
+               }
                if(retValue < 0)
                {
                   perror("Error - exec in parent\n");
                   exit(0);
                }
-               wait(NULL);
             }
 
-            /*Child in pipe command*/
+            /*Child in pipe/redirect command*/
             else
             {
               close(fd[1]);
@@ -270,8 +297,14 @@ void main(void)
                  exit(0);
               }
 
-              retValue = execvp(execB[0], execB);
-
+              if(redirout == 0 || piped == 0)
+              {
+                retValue = execvp(execB[0], execB);
+              }
+              else if(redirin == 0)
+              {
+                retValue = execvp(execA[0], execA);
+              }
               if(retValue < 0)
               {
                  perror("Error executing in child\n"); 
