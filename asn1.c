@@ -9,7 +9,7 @@
 #define CMD_MAX 10
 
 /*global variables*/
-static const char *history[CMD_MAX];
+static const char *history[MAX];
 static unsigned histCount = 0; 
 
 int getValue(char *num)
@@ -35,13 +35,23 @@ int printHistory(char *max)
   else
   {
     int h;
+    /*if no number specified - print commands up to 10*/
     if(max == NULL)
     {
-       for(h = 0; h < histCount; h++)
-       {
-          printf("%s\n", history[h]); 
-       }
+      if(histCount < 10){
+         for(h = 0; h < histCount; h++)
+         {
+            printf("%s\n", history[h]); 
+         }
+      }
+      else{
+        for(h=(histCount - 10); h < 10; h++)
+         {
+           printf("%s\n", history[h]);
+         }
+      }
     }
+    /*else print the specified number of commands up to command count*/
     else
     {
       value = getValue(max); 
@@ -169,13 +179,13 @@ void main(void)
         /*check if command is a pipe command or redirect*/
         for(a = 0; a < n; a++){
            if(!strcmp(tokens[a], "|")){
-                 piped = 1;  //pipe command entered
+                 piped++;  //pipe command entered
             }
             if(!strcmp(tokens[a], "<")){
-                  redirin = 1;  //redireted in command
+                  redirin++;  //redireted in command
             }
             if(!strcmp(tokens[a], ">")){
-                  redirout = 1; //redirected out command
+                  redirout++; //redirected out command
             }
             
          }
@@ -220,15 +230,29 @@ void main(void)
             pipe(fd);
             int retValue = 2; 
 
-            /*copy commands to 2 new arrays*/
+            /*if only one pipe or redirect-copy commands to 2 new arrays*/
             int b = 0, d=0;
             if(piped != 0)
             {
               while(strcmp(tokens[b], "|"))
               {
                execA[b] = tokens[b];
+               printf("in execA: %s \n", execA[b]); 
                b++;
                }
+              if(piped > 1 && piped < 3)
+              {
+                /*two pipes*/
+                b++;
+                int c=0; 
+                while(strcmp(tokens[b], "|"))
+                {
+                  execC[c] = tokens[b];
+                  printf("in execC: %s \n", execC[c]);
+                  b++;
+                  c++;
+                }
+              }
             }
             if(redirout != 0)
             {
@@ -251,6 +275,7 @@ void main(void)
             while(tokens[b] != NULL)
             {
                execB[d] = tokens[b];
+               printf("execB has: %s \n", execB[d]); 
                b++; d++;
             }
 
@@ -272,11 +297,11 @@ void main(void)
                   exit(0); 
                }
 
-               if(redirout == 1 || piped == 1)
+               if(redirout > 0 || piped > 0)
                {
                  retValue = execvp(execA[0], execA);
                }
-               if(redirin == 1)
+               if(redirin > 0)
                {
                  retValue = execvp(execB[0], execB);
                }
@@ -305,11 +330,73 @@ void main(void)
               {
                 retValue = execvp(execA[0], execA);
               }
+
+              /*two or more pipes detected - fork new child*/
+              if(piped > 1)
+              {
+                int fd2[2];
+                pid_t pid3;
+                int retVal2 = 2; 
+
+                if(pipe(fd) < 0)
+                {
+                  perror("Error piping in second iter\n"); 
+                  exit(1);
+                }
+                
+                pid3 = fork();
+
+                if(pid3 < 0)
+                {
+                  printf("Error forking in second child\n"); 
+                  exit(-1);
+                }
+                
+                /*parent process two pipes*/
+                if(pid3 > 0)
+                {
+                  close(fd2[0]); 
+                  if(dup2(fd[1], STDOUT_FILENO) < 0)
+                  {
+                    perror("Error in dup second iter\n"); 
+                    exit(1); 
+                  }
+
+                  retVal2 = execvp(execC[0], execC);
+
+                  if(retVal2 < 0)
+                  {
+                     perror("Error exec in second parent\n"); 
+                     exit(1);
+                  }
+                }
+
+                /*child process two pipes*/
+                else
+                {
+                  close(fd2[1]);
+                  if(dup2(fd[0], STDIN_FILENO) < 0)
+                  {
+                    perror("Error in dup second iter child\n"); 
+                    exit(1); 
+                  }
+
+                  retVal2 = execvp(execB[0], execB);
+
+                  if(retVal2 < 0)
+                  {
+                    perror("Error exec in second child\n"); 
+                    exit(1); 
+                  }
+                }
+              }
+
               if(retValue < 0)
               {
                  perror("Error executing in child\n"); 
                  exit(0);
               }
+              
               exit(0);
             }
           }
