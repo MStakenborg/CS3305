@@ -469,10 +469,11 @@ void main(void)
                         perror("Error exec in third child\n");
                         exit(1);
                       }
-                      close(fd3[1]);
+                      close(fd3[0]);
                     }
+                    close(fd2[0]);
                   }
-                 close(fd2[1]);
+                 close(fd[0]);
                 }
               }
             }
