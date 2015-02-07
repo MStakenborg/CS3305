@@ -305,7 +305,7 @@ void main(void)
                if(dup2(fd[1], STDOUT_FILENO) < 0)
                {
                   perror("Error dup in parent\n");
-                  exit(0); 
+                  exit(1); 
                }
 
                if(redirout > 0 || piped > 0)
@@ -322,6 +322,7 @@ void main(void)
                   perror("Error - exec in parent\n");
                   exit(0);
                }
+               wait(NULL);
                close(fd[1]);
             }
 
@@ -387,6 +388,7 @@ void main(void)
                      perror("Error exec in second parent\n"); 
                      exit(1);
                   }
+                  wait(NULL);
                   close(fd2[1]);
                 }
 
@@ -449,6 +451,7 @@ void main(void)
                         perror("Error exec in third parent\n");
                         exit(1);
                       }
+                      wait(NULL);
                       close(fd3[1]);
                     }
 
