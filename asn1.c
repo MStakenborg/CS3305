@@ -6,7 +6,7 @@
 #include <errno.h>
 
 #define MAX 256
-#define CMD_MAX 10
+#define CMD_MAX 30 
 
 /*global variables*/
 static const char *history[MAX];
@@ -45,7 +45,8 @@ int printHistory(char *max)
          }
       }
       else{
-        for(h=(histCount - 10); h < 10; h++)
+        int temp = histCount;
+        for(h=(temp - 10); h < 10; h++)
          {
            printf("%s\n", history[h]);
          }
@@ -93,7 +94,6 @@ void addHistory(const char *command)
 
 int make_tokenlist(char *buf, char *tokens[])
 {
-
   char input_line[MAX]; 
   char *line; 
   int i, n; 
@@ -187,7 +187,6 @@ void main(void)
             if(!strcmp(tokens[a], ">")){
                   redirout++; //redirected out command
             }
-            
          }
 
         /*if exit, blank input or history was not entered execute cmd*/
@@ -224,6 +223,7 @@ void main(void)
                }
             }
           }
+        
          /*pipe command selected*/ 
          else
          {
@@ -239,7 +239,7 @@ void main(void)
                execA[b] = tokens[b];
                b++;
                }
-              if(piped > 1 && piped < 3)
+              if(piped > 1)
               {
                 /*two pipes*/
                 b++;
@@ -250,6 +250,19 @@ void main(void)
                   b++;
                   c++;
                 }
+                /*three pipes*/
+                if(piped > 2)
+                {
+                  b++; 
+                  int d = 0;
+                  while(strcmp(tokens[b], "|"))
+                  {
+                    execD[d] = tokens[b];
+                    b++;
+                    d++;
+                  }
+                }
+                
               }
             }
             if(redirout != 0)
@@ -270,6 +283,7 @@ void main(void)
             }
             b++; //account for pipe or redirect character
     
+            /*fill in final array with final command*/
             while(tokens[b] != NULL)
             {
                execB[d] = tokens[b];
@@ -319,7 +333,7 @@ void main(void)
                  exit(0);
               }
 
-              if(redirout == 0 || piped == 0)
+              if(redirout == 0 || piped == 1)
               {
                 retValue = execvp(execB[0], execB);
               }
@@ -340,7 +354,7 @@ void main(void)
                 pid_t pid3;
                 int retVal2 = 2; 
 
-                if(pipe(fd) < 0)
+                if(pipe(fd2) < 0)
                 {
                   perror("Error piping in second iter\n"); 
                   exit(1);
@@ -358,7 +372,7 @@ void main(void)
                 if(pid3 > 0)
                 {
                   close(fd2[0]); 
-                  if(dup2(fd[1], STDOUT_FILENO) < 0)
+                  if(dup2(fd2[1], STDOUT_FILENO) < 0)
                   {
                     perror("Error in dup second iter\n"); 
                     exit(1); 
@@ -376,21 +390,84 @@ void main(void)
                 /*child process two pipes*/
                 else
                 {
+
                   close(fd2[1]);
-                  if(dup2(fd[0], STDIN_FILENO) < 0)
+                  if(dup2(fd2[0], STDIN_FILENO) < 0)
                   {
                     perror("Error in dup second iter child\n"); 
                     exit(1); 
                   }
 
-                  retVal2 = execvp(execB[0], execB);
+                  if(piped == 2)
+                  {
+                    retVal2 = execvp(execB[0], execB);
+                  }
 
                   if(retVal2 < 0)
                   {
                     perror("Error exec in second child\n"); 
                     exit(1); 
                   }
-                  exit(0); 
+
+                  if(piped > 2)
+                  {
+                    int fd3[2];
+                    pid_t pid4; 
+                    int retVal3 = 2;
+
+                    if(pipe(fd3) < 0)
+                    {
+                      perror("Error piping in third iter\n");
+                      exit(1);
+                    }
+
+                    pid4 = fork();
+
+                    if(pid4 < 0)
+                    {
+                      perror("Error piping in third iter\n");
+                      exit(-1);
+                    }
+
+                    /*parent process- three pipes*/
+                    if(pid4 > 0)
+                    {
+                      close(fd3[0]);
+                      if(dup2(fd3[1], STDOUT_FILENO) < 0)
+                      {
+                        perror("Error in dup third iter]n");
+                        exit(1);
+                      }
+
+                      retVal3 = execvp(execD[0], execD);
+
+                      if(retVal3 < 0)
+                      {
+                        perror("Error exec in third parent\n");
+                        exit(1);
+                      }
+                    }
+
+                    /*child process three pipes*/
+                    else
+                    {
+                      close(fd3[1]);
+                      if(dup2(fd3[0], STDIN_FILENO) < 0)
+                      {
+                        perror("Error in dup third iter child\n");
+                        exit(1);
+                      }
+
+                      retVal3 = execvp(execB[0], execB);
+
+                      if(retVal3 < 0)
+                      {
+                        perror("Error exec in third child\n");
+                        exit(1);
+                      }
+                      exit(0);
+                    }
+                  }
                 }
               }
             }
