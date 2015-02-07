@@ -308,7 +308,6 @@ void main(void)
                   exit(0); 
                }
 
-              
                if(redirout > 0 || piped > 0)
                {
                  retValue = execvp(execA[0], execA);
@@ -323,6 +322,7 @@ void main(void)
                   perror("Error - exec in parent\n");
                   exit(0);
                }
+               close(fd[1]);
             }
 
             /*Child in pipe/redirect command*/
@@ -387,6 +387,7 @@ void main(void)
                      perror("Error exec in second parent\n"); 
                      exit(1);
                   }
+                  close(fd2[1]);
                 }
 
                 /*child process two pipes*/
@@ -448,6 +449,7 @@ void main(void)
                         perror("Error exec in third parent\n");
                         exit(1);
                       }
+                      close(fd3[1]);
                     }
 
                     /*child process three pipes*/
@@ -467,8 +469,10 @@ void main(void)
                         perror("Error exec in third child\n");
                         exit(1);
                       }
+                      close(fd3[1]);
                     }
                   }
+                 close(fd2[1]);
                 }
               }
             }
