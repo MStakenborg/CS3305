@@ -298,7 +298,7 @@ void main(void)
                exit(-1);
             }
 
-            /*Parent in pipe command*/
+            /*Parent in pipe or redirect command*/
             if(pid2 > 0)
             {
                close(fd[0]); 
@@ -308,10 +308,12 @@ void main(void)
                   exit(0); 
                }
 
+              
                if(redirout > 0 || piped > 0)
                {
                  retValue = execvp(execA[0], execA);
                }
+
                if(redirin > 0)
                {
                  retValue = execvp(execB[0], execB);
@@ -330,14 +332,14 @@ void main(void)
               if(dup2(fd[0], STDIN_FILENO) < 0)
               {
                  perror("Error dup in child\n"); 
-                 exit(0);
+                 exit(1);
               }
 
-              if(redirout == 0 || piped == 1)
+              if(redirout == 1 || piped == 1)
               {
                 retValue = execvp(execB[0], execB);
               }
-              else if(redirin == 0)
+              else if(redirin == 1)
               {
                 retValue = execvp(execA[0], execA);
               }
@@ -347,8 +349,8 @@ void main(void)
                 exit(1);
               }
 
-              /*two or more pipes detected - fork new child*/
-              if(piped > 1)
+              /*two or more pipes/redir detected - fork new child*/
+              if(piped > 1 || redirout > 1 || redirin > 1)
               {
                 int fd2[2];
                 pid_t pid3;
@@ -465,7 +467,6 @@ void main(void)
                         perror("Error exec in third child\n");
                         exit(1);
                       }
-                      exit(0);
                     }
                   }
                 }
