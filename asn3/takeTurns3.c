@@ -29,7 +29,7 @@ void *printStmt(void *id)
   {
     sem_wait(&sems[thread]); 
     printf("Thread %d executing op%d\n", thread, thread); 
-    if(thread+1 > nthreads)
+    if(thread+1 >= nthreads)
     {
       sem_post(&sems[0]); 
     }
