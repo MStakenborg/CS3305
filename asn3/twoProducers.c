@@ -16,7 +16,7 @@
 #include <semaphore.h>
 
 /*global variables*/
-int finished = 0; 
+int finished = 0;  //indicates when all items have been put into buffers 
 
 /*declare semaphore and global variable*/
 sem_t bsems[2]; //sems to control stall/release on buffer full (cons pops)
@@ -42,9 +42,11 @@ int isFull(Stack *S);
 /*stack declarations*/
 Stack *ProdA, *ProdB; 
 
+/*consume method takes items from two buffers until both buffers are empty
+ * and all the items entered have been processed then exits the program*/
 void *consume(void *arg)
 {
-  int signal = 0; 
+  int consumed; 
   while(1)
   {
     if(finished = 2 && isEmpty(ProdA) && isEmpty(ProdB))
@@ -53,7 +55,6 @@ void *consume(void *arg)
       exit(0); 
     }
  
-    int consumed; 
     while(isEmpty(ProdA) != 1)
     {
        consumed = pop(ProdA);
@@ -82,29 +83,31 @@ void *produce(void *arg)
   Stack *buffer = (Stack *)arg; 
   int numItems = buffer->elements; //get number of items to produce
   int bufName = buffer->name; 
-  int i; 
-  for(i=0; i < numItems; i++){
+  int i;
+  for(i=0; i < numItems; i++)
+  {
       if(bufName == 1)
       {
-        push(ProdA, i); 
-        printf("Producer %d pushing item into buffer\n", bufName);
-        sem_post(&csems[0]); 
         if(isFull(ProdA))
         {
           sem_wait(&bsems[0]); 
         }
-      }
+         push(ProdA, i); 
+         printf("Producer %d pushing item into buffer\n", bufName);
+         sem_post(&csems[0]); 
+       }
+        
       if(bufName == 2)
       {
+        if(isFull(ProdB))
+        {
+          sem_wait(&bsems[1]);
+        }
         push(ProdB, i);
         printf("Producer %d pushing item into buffer\n", bufName);
         sem_post(&csems[1]);
-        if(isFull(ProdB))
-        {
-           sem_wait(&bsems[1]);
-        }
       }
-  }
+  } 
   finished++;
 }
 
@@ -126,10 +129,10 @@ int main(int argc, char** argv)
   bufferBitems = atoi(argv[4]); 
 
   /*initialize sempahores*/
-  sem_init(&bsems[0], 0, 1);
-  sem_init(&bsems[1], 0, 1);  
-  sem_init(&csems[1], 0, 0); 
-  sem_init(&csems[2], 0, 0); 
+  sem_init(&bsems[0], 0, 0);
+  sem_init(&bsems[1], 0, 0);  
+  sem_init(&csems[1], 0, 1); 
+  sem_init(&csems[2], 0, 1); 
 
   /*create stacks*/ 
   ProdA = createStack(1, bufferAsize, 0, bufferAitems); 
