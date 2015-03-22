@@ -22,7 +22,7 @@ int finished = 0;  //indicates when all items have been put into buffers
 sem_t bsems[2]; //sems to control stall/release on buffer full (cons pops)
 sem_t csems[2]; //sems to control stall/release on buffer empty (prods push)
 
-/*stack structure*/
+/*stack structure for buffers*/
 typedef struct Stack
 {
   int name;       //buffer name 1/2 
@@ -46,19 +46,20 @@ Stack *ProdA, *ProdB;
  * and all the items entered have been processed then exits the program*/
 void *consume(void *arg)
 {
-  int consumed; 
   while(1)
   {
+    /*if both producers are finished and both buffers are empty, exit*/
     if(finished = 2 && isEmpty(ProdA) && isEmpty(ProdB))
     {
       printf("Finished executing all items. Exiting program...\n"); 
       exit(0); 
     }
  
+    /*pull items from buffer A*/
     while(isEmpty(ProdA) != 1)
     {
-       consumed = pop(ProdA);
-       printf("Consumer consumed %d from buffer A\n", consumed); 
+       pop(ProdA);
+       printf("Consumer has consumed an item from producer %d\n", ProdA->name); 
        sem_post(&bsems[0]);
        if(isEmpty(ProdA))
        {
@@ -67,8 +68,8 @@ void *consume(void *arg)
     }
     while(isEmpty(ProdB) != 1)
     {
-       consumed = pop(ProdB); 
-       printf("Consumer Consumed %d from buffer B\n", consumed); 
+       pop(ProdB); 
+       printf("Consumer has consumed an item from producer %d\n", ProdB->name); 
        sem_post(&bsems[1]); 
        if(isEmpty(ProdB))
        {
@@ -78,9 +79,11 @@ void *consume(void *arg)
   }
 }
 
+/*produce method puts number of items specified in argument into buffers.
+ * Stalls if buffer is full and signals consumer when an item is pushed*/
 void *produce(void *arg)
 {
-  Stack *buffer = (Stack *)arg; 
+  Stack *buffer = (Stack *)arg;    //get buffer details
   int numItems = buffer->elements; //get number of items to produce
   int bufName = buffer->name; 
   int i;
@@ -88,12 +91,13 @@ void *produce(void *arg)
   {
       if(bufName == 1)
       {
+        //if the buffer is full, wait until consumer takes item
         if(isFull(ProdA))
         {
           sem_wait(&bsems[0]); 
         }
          push(ProdA, i); 
-         printf("Producer %d pushing item into buffer\n", bufName);
+         printf("Producer %d has put an item in its buffer\n", bufName);
          sem_post(&csems[0]); 
        }
         
@@ -104,14 +108,16 @@ void *produce(void *arg)
           sem_wait(&bsems[1]);
         }
         push(ProdB, i);
-        printf("Producer %d pushing item into buffer\n", bufName);
+        printf("Producer %d has put an item in its bufferr\n", bufName);
         sem_post(&csems[1]);
       }
   } 
   finished++;
 }
 
-/* main program creates the threads and cleans up after return */
+/* main program creates the threads for two producers and one consumer. 
+ * Then redirects threads to specified methods 
+ * Cleans up after return */
 int main(int argc, char** argv) 
 { 
   int bufferAsize, bufferBsize, bufferAitems, bufferBitems; 
@@ -166,16 +172,14 @@ int main(int argc, char** argv)
   
 
   /*cleanup*/
-//  sem_destroy(fullA);
-//  sem_destroy(emptyA); 
-//  sem_destroy(mutexA); 
-//  sem_destroy(fullB); 
-//  sem_destroy(emptyB); 
-//  sem_destroy(mutexB); 
+  sem_destroy(csems);
+  sem_destroy(bsems); 
 
   pthread_exit(0); 
 }
 
+/*Stack methods create and manipulate stack options to create stacks
+ * push items onto the stack, and pull items from the stack*/ 
 Stack * createStack(int n, int cap, int size, int numElem)
 {
   Stack *S;
@@ -191,7 +195,7 @@ Stack * createStack(int n, int cap, int size, int numElem)
 void push(Stack *S, int element) {
   if(S->size == S->capacity)
   {
-      printf("Error stack full.\n"); 
+      printf("Error stack full.\n");  //failsafe  
       return; 
   }
   else{
@@ -202,7 +206,7 @@ void push(Stack *S, int element) {
 int pop(Stack *S){
   if(S->size == 0)
   {
-    printf("Error stack empty\n"); 
+    printf("Error stack empty\n");  //failsafe
     return -1; 
   }
   else
