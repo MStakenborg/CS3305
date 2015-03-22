@@ -44,6 +44,7 @@ Stack *ProdA, *ProdB;
 
 void *consume(void *arg)
 {
+  int signal = 0; 
   while(1)
   {
     if(finished = 2 && isEmpty(ProdA) && isEmpty(ProdB))
@@ -57,11 +58,21 @@ void *consume(void *arg)
     {
        consumed = pop(ProdA);
        printf("Consumer consumed %d from buffer A\n", consumed); 
+       sem_post(&bsems[0]);
+       if(isEmpty(ProdA))
+       {
+         sem_wait(&csems[0]);
+       }
     }
     while(isEmpty(ProdB) != 1)
     {
        consumed = pop(ProdB); 
        printf("Consumer Consumed %d from buffer B\n", consumed); 
+       sem_post(&bsems[1]); 
+       if(isEmpty(ProdB))
+       {
+         sem_wait(&csems[1]);
+       }
     }
   }
 }
@@ -77,11 +88,21 @@ void *produce(void *arg)
       {
         push(ProdA, i); 
         printf("Producer %d pushing item into buffer\n", bufName);
+        sem_post(&csems[0]); 
+        if(isFull(ProdA))
+        {
+          sem_wait(&bsems[0]); 
+        }
       }
       if(bufName == 2)
       {
         push(ProdB, i);
         printf("Producer %d pushing item into buffer\n", bufName);
+        sem_post(&csems[1]);
+        if(isFull(ProdB))
+        {
+           sem_wait(&bsems[1]);
+        }
       }
   }
   finished++;
