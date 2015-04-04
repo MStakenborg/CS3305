@@ -38,7 +38,6 @@ int main(int argc, char** argv)
   char *query; 
   int lfu = 0; 
   int lru = 0; 
-  int full = 0; 
 
   /*check for command line argument - assumes valid digit entered*/
   if (argc != 4){
@@ -65,8 +64,6 @@ int main(int argc, char** argv)
 
   /*create space for arrays*/
   pageTable = (pageInfoEntry*)malloc(frames * sizeof(pageInfoEntry)); 
-
-  printf("Making space the size of %d bytes\n", (frames*sizeof(pageInfoEntry))); 
 
   /*initialize all frames in page Table*/
   int i, j, k; 
@@ -97,9 +94,8 @@ int main(int argc, char** argv)
   i=0;
   int q; 
   rewind(file); 
-  while(!feof(file))
+  while(fscanf(file, "%d", &q) != EOF)
   {
-     fscanf(file, "%d", &q);  
      mem[i] = q;
      i++;
   }
@@ -145,7 +141,7 @@ int main(int argc, char** argv)
         if(lru == 1)
         {
           //replace value which was used least recently
-        /*  int m, o = 0; 
+          int m, o = 0; 
           long double oldest = pageTable[0].lastUsed; 
           for(m=1; m < frames; m++)
           {
@@ -159,7 +155,7 @@ int main(int argc, char** argv)
           pageTable[o].useCount = 1; 
           gettimeofday(&curTime, NULL);
           pageTable[o].lastUsed = curTime.tv_usec;
-          */
+          
         }
         else if(lfu == 1)
         {
@@ -179,8 +175,9 @@ int main(int argc, char** argv)
   printf("Number of page faults incurred was %d\n", faults); 
 
   /*cleanup*/
+  close(file); 
   free(pageTable); 
-//  free(mem); 
+  free(mem); 
   return 0; 
 }
 
