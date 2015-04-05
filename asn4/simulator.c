@@ -47,6 +47,12 @@ int main(int argc, char** argv)
 
   /*get number of frames from command line argument*/
   frames = atoi(argv[1]);
+  /*make sure number of frames given isn't 0*/
+  if(frames == 0)
+  {
+    printf("Please enter a size greater than 0\n"); 
+    exit(0); 
+  }
   filename = argv[2]; 
   file = fopen(filename, "r"); 
   algorithm = argv[3]; 
@@ -159,7 +165,22 @@ int main(int argc, char** argv)
         }
         else if(lfu == 1)
         {
-          //do stuff for lfu
+          //useCount
+          //replace least frequently used value
+         int n, lu; 
+         int leastUsed = pageTable[0].useCount;
+         for(n=1; n < frames; n++)
+         {
+            if(pageTable[n].useCount < leastUsed)
+            {
+                 leastUsed = pageTable[n].lastUsed;
+                 lu = n;
+            }
+         }
+         pageTable[lu].frameNumber = q;
+         pageTable[lu].useCount = 1;
+         gettimeofday(&curTime, NULL);
+         pageTable[lu].lastUsed = curTime.tv_usec;
         }
         else
         {
@@ -172,6 +193,12 @@ int main(int argc, char** argv)
   }
           
 
+  int o;
+  for(o=0; o < frames; o++)
+  {
+    printf("pageTable at %d is %d\n", o, pageTable[o].frameNumber); 
+
+  }
   printf("Number of page faults incurred was %d\n", faults); 
 
   /*cleanup*/
