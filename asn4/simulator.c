@@ -92,20 +92,21 @@ int main(int argc, char** argv)
        lineCount++;
      }
   }
-
+  
   /*allocate space for page table array*/
   pageTable = (pageInfoEntry*)malloc(lineCount * sizeof(pageInfoEntry)); 
  
   /*initialize page table array with entries from file*/
   int pt = 0, q; 
   rewind(file);
+  fscanf(file, "%d", &q); 
   while(!feof(file))
   {
+    pageTable[pt].frameNumber = q;
+    pageTable[pt].useCount = 0; 
+    pageTable[pt].lastUsed = 0; 
+    pt++;
     fscanf(file, "%d", &q); 
-    pageTable[i].frameNumber = q;
-    pageTable[i].useCount = 0; 
-    pageTable[i].lastUsed = 0; 
-    i++;
   }
 
   /*read elements in file and check if they are in table yet*/
@@ -142,10 +143,11 @@ int main(int argc, char** argv)
           break;
         }
       }
-      //if no empty slot (hit is still false), replace value dependent
-      //on chosen algorithm 
+      /*if no empty slot (hit is still false), replace value dependent
+      on chosen algorithm*/ 
       if(hit != 1)
       {
+        /*********** Least Recently Used *************/
         if(lru == 1)
         {
           //replace value which was used least recently
@@ -166,8 +168,9 @@ int main(int argc, char** argv)
         }
         else if(lfu == 1)
         {
+          /************ Least Frequently Used *******/
           //replace least frequently used value
-         int n, lu; 
+         int n, lu=0; 
          int leastUsed = tlb[0].useCount;
          for(n=1; n < frames; n++)
          {
@@ -196,8 +199,7 @@ int main(int argc, char** argv)
   int o;
   for(o=0; o < frames; o++)
   {
-  //  printf("pageTable at %d is %d\n", o, tlb[o].frameNumber); 
-
+    printf("pageTable at %d is %d\n", o, tlb[o].frameNumber); 
   }
   printf("Number of page faults incurred was %d\n", faults); 
 
