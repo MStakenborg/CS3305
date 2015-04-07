@@ -34,7 +34,7 @@ int main(int argc, char** argv)
   char *filename; 
   FILE *file; 
   pageInfoEntry *pageTable;  //page Table array 
-  pageInfoEntry *tlb;                  //main memory array
+  pageInfoEntry *tlb;       //ignore -not being used for this assignment 
   char *query; 
   int lfu = 0; 
   int lru = 0; 
@@ -69,15 +69,15 @@ int main(int argc, char** argv)
 
 
   /*create space for arrays*/
-  tlb = (pageInfoEntry*)malloc(frames * sizeof(pageInfoEntry)); 
+  pageTable = (pageInfoEntry*)malloc(frames * sizeof(pageInfoEntry)); 
 
-  /*initialize all frames in tlb to -1*/
+  /*initialize all frames in page table to -1*/
   int i, j, k; 
   for(i =0; i < frames; i++)
   {
-    tlb[i].frameNumber = -1; 
-    tlb[i].lastUsed = 0; 
-    tlb[i].useCount = 0; 
+    pageTable[i].frameNumber = -1; 
+    pageTable[i].lastUsed = 0; 
+    pageTable[i].useCount = 0; 
   }
 
   /*get number of queries from file*/
@@ -93,8 +93,8 @@ int main(int argc, char** argv)
      }
   }
   
-  /*allocate space for page table array*/
-  pageTable = (pageInfoEntry*)malloc(lineCount * sizeof(pageInfoEntry)); 
+  /*allocate space for tlb array - ignore not used for this assignment*/
+  tlb = (pageInfoEntry*)malloc(lineCount * sizeof(pageInfoEntry)); 
  
   /*initialize page table array with entries from file*/
   int pt = 0, q; 
@@ -102,9 +102,9 @@ int main(int argc, char** argv)
   fscanf(file, "%d", &q); 
   while(!feof(file))
   {
-    pageTable[pt].frameNumber = q;
-    pageTable[pt].useCount = 0; 
-    pageTable[pt].lastUsed = 0; 
+    tlb[pt].frameNumber = q;
+    tlb[pt].useCount = 0; 
+    tlb[pt].lastUsed = 0; 
     pt++;
     fscanf(file, "%d", &q); 
   }
@@ -121,7 +121,7 @@ int main(int argc, char** argv)
     /*check if frame number in table matches*/
     for(j = 0; j < frames; j++)
     {
-       if(tlb[j].frameNumber == q)
+       if(pageTable[j].frameNumber == q)
        {
          hit = 1;
          break; 
@@ -133,12 +133,12 @@ int main(int argc, char** argv)
       //check if there is an empty frame, if so put new value in
       for(i=0; i < frames; i++)
       {
-        if(tlb[i].useCount == 0)
+        if(pageTable[i].useCount == 0)
         {
-          tlb[i].frameNumber = q;
-          tlb[i].useCount++; 
+          pageTable[i].frameNumber = q;
+          pageTable[i].useCount++; 
           gettimeofday(&curTime, NULL); 
-          tlb[i].lastUsed = curTime.tv_usec;
+          pageTable[i].lastUsed = curTime.tv_usec;
           hit = 1; 
           break;
         }
@@ -152,38 +152,38 @@ int main(int argc, char** argv)
         {
           //replace value which was used least recently
           int m, o = 0; 
-          long double oldest = tlb[0].lastUsed; 
+          long double oldest = pageTable[0].lastUsed; 
           for(m=1; m < frames; m++)
           {
-            if(tlb[m].lastUsed < oldest)
+            if(pageTable[m].lastUsed < oldest)
             {
-              oldest = tlb[m].lastUsed;
+              oldest = pageTable[m].lastUsed;
               o = m; 
             }
           }
-          tlb[o].frameNumber = q; 
-          tlb[o].useCount = 1; 
+          pageTable[o].frameNumber = q; 
+          pageTable[o].useCount = 1; 
           gettimeofday(&curTime, NULL);
-          tlb[o].lastUsed = curTime.tv_usec;
+          pageTable[o].lastUsed = curTime.tv_usec;
         }
         else if(lfu == 1)
         {
           /************ Least Frequently Used *******/
           //replace least frequently used value
          int n, lu=0; 
-         int leastUsed = tlb[0].useCount;
+         int leastUsed = pageTable[0].useCount;
          for(n=1; n < frames; n++)
          {
-            if(tlb[n].useCount < leastUsed)
+            if(pageTable[n].useCount < leastUsed)
             {
-                 leastUsed = tlb[n].lastUsed;
+                 leastUsed = pageTable[n].lastUsed;
                  lu = n;
             }
          }
-         tlb[lu].frameNumber = q;
-         tlb[lu].useCount = 1;
+         pageTable[lu].frameNumber = q;
+         pageTable[lu].useCount = 1;
          gettimeofday(&curTime, NULL);
-         tlb[lu].lastUsed = curTime.tv_usec;
+         pageTable[lu].lastUsed = curTime.tv_usec;
         }
         else
         {
@@ -199,7 +199,7 @@ int main(int argc, char** argv)
   int o;
   for(o=0; o < frames; o++)
   {
-    printf("pageTable at %d is %d\n", o, tlb[o].frameNumber); 
+    printf("pageTable at %d is %d\n", o, pageTable[o].frameNumber); 
   }
   printf("Number of page faults incurred was %d\n", faults); 
 
